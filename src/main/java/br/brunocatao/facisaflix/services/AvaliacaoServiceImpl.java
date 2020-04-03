@@ -5,11 +5,14 @@ import br.brunocatao.facisaflix.dao.FilmeRepository;
 import br.brunocatao.facisaflix.dao.UsuarioRepository;
 import br.brunocatao.facisaflix.dto.ScoreFilme;
 import br.brunocatao.facisaflix.dto.ScoreUsuario;
+import br.brunocatao.facisaflix.entities.Avaliacao;
 import br.brunocatao.facisaflix.entities.Filme;
 import br.brunocatao.facisaflix.entities.Usuario;
 import br.brunocatao.facisaflix.util.Similaridade;
 import static br.brunocatao.facisaflix.util.CalculadorDeSimilaridade.getNota;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -21,6 +24,7 @@ public class AvaliacaoServiceImpl implements AvaliacaoService {
   private AvaliacaoRepository avaliacaoRepository;
   private FilmeRepository filmeRepository;
   private UsuarioRepository usuarioRepository;
+  private CacheManager cacheManager;
 
   @Override
   public List<Filme> getFilmes() {
@@ -53,6 +57,23 @@ public class AvaliacaoServiceImpl implements AvaliacaoService {
   }
 
   @Override
+  public void avaliar(Long idUsuario, Long idFilme, double nota) {
+    // Criando a avaliação
+    Usuario usuario = usuarioRepository.findById(idUsuario).get();
+    Filme filme = filmeRepository.findById(idFilme).get();
+    Avaliacao avaliacao = new Avaliacao();
+    avaliacao.setUsuario(usuario);
+    avaliacao.setFilme(filme);
+    avaliacao.setNota(nota);
+    avaliacaoRepository.save(avaliacao);
+
+    // Invalido as caches
+    cacheManager.getCache("UsuariosSimilares").clear();
+    cacheManager.getCache("FilmesRecomendados").clear();
+  }
+
+  @Override
+  @Cacheable(cacheNames = "UsuariosSimilares", key="#usuario.id")
   public List<ScoreUsuario> getUsuariosSimilares(Usuario usuario, Similaridade calculador) {
     return usuarioRepository.findAll().stream() // para todos os usuários u
         .filter(u -> u != usuario) // diferentes do usuário passado como argumento
@@ -62,6 +83,7 @@ public class AvaliacaoServiceImpl implements AvaliacaoService {
   }
 
   @Override
+  @Cacheable(cacheNames = "FilmesRecomendados", key="#usuario.id")
   public List<ScoreFilme> getFilmesRecomendados(Usuario usuario, Similaridade calculador) {
     Map<Filme, Double> totalPorFilme = new HashMap<>();
     Map<Filme, Double> similaridadePorFilme = new HashMap<>();

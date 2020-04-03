@@ -41,4 +41,11 @@ public class RecomendacoesController {
     Usuario usuario = avaliacaoService.getUsuario(id).get();
     return avaliacaoService.getFilmesRecomendados(usuario, CalculadorDeSimilaridade::getSimilaridadePearson);
   }
+
+  @ResponseStatus(HttpStatus.OK)
+  @RequestMapping(value = "/avaliar/{usuarioId}/{filmeId}/{nota}", method = RequestMethod.GET)
+  public String avaliar(@PathVariable Long usuarioId, @PathVariable Long filmeId, @PathVariable Double nota) {
+    avaliacaoService.avaliar(usuarioId, filmeId, nota);
+    return "ok";
+  }
 }

@@ -16,6 +16,9 @@ public interface AvaliacaoService {
   List<Usuario> getUsuariosPorNome(String nome);
   Optional<Filme> getFilme(Long id);
   List<Filme> getFilmesPorNome(String nome);
+
+  void avaliar(Long idUsuario, Long idFilme, double nota);
+
   List<ScoreUsuario> getUsuariosSimilares(Usuario usuario, Similaridade calculador);
   List<ScoreFilme> getFilmesRecomendados(Usuario usuario, Similaridade calculador);
 }
